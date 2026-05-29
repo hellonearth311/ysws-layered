@@ -13,5 +13,10 @@
     <p>your name: {{ user.get_full_name }} </p>
     <p>your verification status: {{ user.hackclub_profile.verification_status }}</p>
     <p>your slack id: {{ user.hackclub_profile.slack_id }}</p>
+
+    <form action="{% url 'logout' %}" method="post">
+        {% csrf_token %}
+        <button id="logoutButton" type="submit">logout</button>
+    </form>
 </body>
 </html>

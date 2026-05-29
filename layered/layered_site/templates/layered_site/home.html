@@ -9,6 +9,9 @@
 <body>
     <h1>Layered</h1>
     <p>Layered is a Hack Club YSWS where you ship CAD, and we ship you a 3D printer!</p>
-    <a id="loginButton" href="{% url 'login' %}">login</a>
+    <form action="{% url 'login' %}" method="post">
+        {%csrf_token%}
+        <button id="loginButton" type="submit">login</button>
+    </form>
 </body>
 </html>

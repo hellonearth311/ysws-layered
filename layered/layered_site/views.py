@@ -1,15 +1,17 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from authlib.integrations.django_client import OAuth
-from django.contrib.auth import login, get_user_model
+from django.contrib.auth import login, get_user_model, logout
 from django.contrib.auth.models import User
 from dotenv import load_dotenv
 from django.http import HttpResponse
-from django.shortcuts import redirect
+from django.views.decorators.http import require_POST
 
 import os
 import requests
 
 from .models import Profile
+
+FORCE_REAUTH_COOKIE = "hca_force_reauth"
 
 # setting up auth
 oauth = OAuth()
@@ -25,11 +27,21 @@ oauth.register(
 )
 
 # auth views
+@require_POST
 def login_view(request):
+    if request.user.is_authenticated:
+        return redirect("dashboard")
+
     # go to hackclub login
     redirect_uri = os.environ["HCA_CALLBACK_URI"]
 
-    return oauth.hackclub.authorize_redirect(request, redirect_uri)
+    authorize_kwargs = {}
+    if request.COOKIES.get(FORCE_REAUTH_COOKIE) == "1":
+        authorize_kwargs["prompt"] = "login"
+
+    response = oauth.hackclub.authorize_redirect(request, redirect_uri, **authorize_kwargs)
+    response.delete_cookie(FORCE_REAUTH_COOKIE)
+    return response
 
 def auth_callback(request):
     token = oauth.hackclub.authorize_access_token(request)
@@ -61,12 +73,20 @@ def auth_callback(request):
     )
 
     login(request, user)
-    return redirect("dashboard")
+    response = redirect("dashboard")
+    response.delete_cookie(FORCE_REAUTH_COOKIE)
+    return response
 
-# Create your views here.
+@require_POST
+def logout_view(request):
+    response = redirect("/")
+    response.set_cookie(FORCE_REAUTH_COOKIE, "1", max_age=60 * 60 * 24, samesite="Lax")
+    logout(request)
+    return response
+
+# regular views
 def index(request):
     return render(request, "layered_site/home.html")
-
 
 def dashboard(request):
     return render(request, "layered_site/dashboard.html")
