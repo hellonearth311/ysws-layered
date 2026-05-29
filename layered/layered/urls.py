@@ -18,6 +18,6 @@ from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
-    path("layered_site/", include("layered_site.urls")),
+    path("", include("layered_site.urls")),
     path('admin/', admin.site.urls),
 ]
